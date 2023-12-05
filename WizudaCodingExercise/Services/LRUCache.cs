@@ -27,22 +27,34 @@ namespace WizudaCodingExercise.Services
         {
             lock (lockObject)
             {
-                if (cache.TryGetValue(key, out CacheNode node))
+                try
                 {
-                    node.Value = value;
-                    node.AccessTime = DateTime.Now;
-                    lruList.Remove(node);
-                    lruList.AddLast(node);
+                    if (cache.TryGetValue(key, out CacheNode node))
+                    {
+                        // Update existing entry
+                        node.Value = value;
+                        node.AccessTime = DateTime.Now;
+                        lruList.Remove(node);
+                        lruList.AddLast(node);
+                    }
+                    else
+                    {
+                        // Add new entry
+                        if (cache.Count >= capacity)
+                        {
+                            // Evict least recently used item
+                            Evict();
+                        }
+
+                        CacheNode newNode = new CacheNode(key, value);
+                        cache.TryAdd(key, newNode);
+                        lruList.AddLast(newNode);
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    if (cache.Count >= capacity)
-                        Evict();
-
-
-                    CacheNode newNode = new CacheNode(key, value);
-                    cache.Add(key, newNode);
-                    lruList.AddLast(newNode);
+                    // Handle exceptions (log, rethrow, or take appropriate action)
+                    Console.WriteLine($"Exception in AddOrUpdate: {ex.Message}");
                 }
             }
         }
@@ -51,19 +63,28 @@ namespace WizudaCodingExercise.Services
         {
             lock (lockObject)
             {
-                if (cache.TryGetValue(key, out CacheNode node))
+                try
                 {
-                    // Move the accessed item to the end of the LRU list
-                    node.AccessTime = DateTime.Now;
-                    lruList.Remove(node);
-                    lruList.AddLast(node);
+                    if (cache.TryGetValue(key, out CacheNode node))
+                    {
+                        // Move the accessed item to the end of the LRU list
+                        node.AccessTime = DateTime.Now;
+                        lruList.Remove(node);
+                        lruList.AddLast(node);
 
-                    value = node.Value;
-                    return true;
+                        value = node.Value;
+                        return true;
+                    }
+
+                    value = default;
+                    return false;
                 }
-
-                value = default;
-                return false;
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Exception in TryGetValue: {ex.Message}");
+                    value = default;
+                    return false;
+                }
             }
         }
 
