@@ -137,6 +137,7 @@ namespace WizudaCodingExercise.Services
                 cache.TryRemove(lruNode.Key, out _);
                 lruList.RemoveFirst();
 
+                logger.Information($"Evicted: Key = {lruNode.Key}, Value = {lruNode.Value}");
                 OnItemEvicted(lruNode.Key, lruNode.Value);
             }
             catch (Exception ex)
