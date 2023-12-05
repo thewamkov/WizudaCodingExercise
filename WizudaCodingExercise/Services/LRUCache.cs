@@ -14,9 +14,9 @@ namespace WizudaCodingExercise.Services
         private readonly LinkedList<CacheNode> lruList;
 
         private readonly ReaderWriterLockSlim lockObject = new ReaderWriterLockSlim();
+        private readonly object eventLock = new object();
 
-        private static LRUCache<TKey, TValue> instance;
-
+        private static LRUCache<TKey, TValue> instance = default!;
         private static int ConfigurableCapacity { get; set; } = 100;
 
         private LRUCache(int capacity)
@@ -27,9 +27,12 @@ namespace WizudaCodingExercise.Services
             }
 
             this.capacity = capacity;
-            this.cache = new ConcurrentDictionary<TKey, CacheNode>();
-            this.lruList = new LinkedList<CacheNode>();
-            this.logger = Log.ForContext<LRUCache<TKey, TValue>>();
+            cache = new ConcurrentDictionary<TKey, CacheNode>();
+            lruList = new LinkedList<CacheNode>();
+            logger = Log.ForContext<LRUCache<TKey, TValue>>();
+
+            ItemEvicted += (sender, args) => { };
+            instance ??= this;
         }
 
         public static LRUCache<TKey, TValue> Instance
@@ -65,7 +68,6 @@ namespace WizudaCodingExercise.Services
             {
                 if (cache.TryGetValue(key, out CacheNode node))
                 {
-                    // Update existing entry
                     node.Value = value;
                     node.AccessTime = DateTime.Now;
                     lruList.Remove(node);
@@ -73,7 +75,6 @@ namespace WizudaCodingExercise.Services
                 }
                 else
                 {
-                    // Add new entry
                     if (cache.Count >= capacity)
                         Evict();
 
@@ -84,7 +85,6 @@ namespace WizudaCodingExercise.Services
             }
             catch (Exception ex)
             {
-                // Log the exception using Serilog
                 logger.Error(ex, "Error in AddOrUpdate");
             }
             finally
@@ -152,7 +152,15 @@ namespace WizudaCodingExercise.Services
 
         protected virtual void OnItemEvicted(TKey key, TValue value)
         {
-            ItemEvicted?.Invoke(this, new EvictionEventArgs<TKey, TValue>(key, value));
+            EventHandler<EvictionEventArgs<TKey, TValue>>? handlers;
+
+            lock (eventLock)
+            {
+                handlers = ItemEvicted;
+            }
+
+            handlers?.Invoke(this, new EvictionEventArgs<TKey, TValue>(key, value));
+
         }
 
         private class CacheNode
