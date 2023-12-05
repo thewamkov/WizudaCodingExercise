@@ -14,7 +14,11 @@ namespace WizudaCodingExercise.Services
 
         private readonly ReaderWriterLockSlim lockObject = new ReaderWriterLockSlim();
 
-        public LRUCache(int capacity)
+        private static LRUCache<TKey, TValue> instance;
+
+        private static int ConfigurableCapacity { get; set; } = 100;
+
+        private LRUCache(int capacity)
         {
             if (capacity <= 0)
             {
@@ -25,6 +29,28 @@ namespace WizudaCodingExercise.Services
             this.cache = new ConcurrentDictionary<TKey, CacheNode>();
             this.lruList = new LinkedList<CacheNode>();
             this.logger = Log.ForContext<LRUCache<TKey, TValue>>();
+        }
+
+        public static LRUCache<TKey, TValue> Instance
+        {
+            get
+            {
+                if (instance == null)
+                {
+                    Interlocked.CompareExchange(ref instance, new LRUCache<TKey, TValue>(ConfigurableCapacity), null);
+                }
+                return instance;
+            }
+        }
+
+        public static void SetCapacity(int newCapacity)
+        {
+            if (instance != null)
+            {
+                throw new InvalidOperationException("Cannot set capacity after the singleton instance has been created.");
+            }
+
+            ConfigurableCapacity = newCapacity;
         }
 
         public void AddOrUpdate(TKey key, TValue value)
