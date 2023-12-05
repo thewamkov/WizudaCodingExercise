@@ -1,10 +1,10 @@
-﻿
-using Serilog;
+﻿using Serilog;
+using System;
 using System.Collections.Concurrent;
-using WizudaCodingExercise.Abstraction;
+using System.Threading;
 using WizudaCodingExercise.Models;
 
-namespace WizudaCodingExercise.Services
+namespace WizudaCodingExercise.Abstraction
 {
     public class LRUCache<TKey, TValue> : ILRUCache<TKey, TValue>
     {
@@ -13,11 +13,16 @@ namespace WizudaCodingExercise.Services
         private readonly ConcurrentDictionary<TKey, CacheNode> cache;
         private readonly LinkedList<CacheNode> lruList;
 
-        private readonly ReaderWriterLockSlim lockObject = new ReaderWriterLockSlim();
         private readonly object eventLock = new object();
+        private readonly ReaderWriterLockSlim lockObject = new ReaderWriterLockSlim();
+        private static readonly Lazy<LRUCache<TKey, TValue>> lazyInstance;
 
-        private static LRUCache<TKey, TValue> instance = default!;
         private static int ConfigurableCapacity { get; set; } = 100;
+
+        static LRUCache()
+        {
+            lazyInstance = new Lazy<LRUCache<TKey, TValue>>(() => new LRUCache<TKey, TValue>(ConfigurableCapacity));
+        }
 
         private LRUCache(int capacity)
         {
@@ -32,18 +37,16 @@ namespace WizudaCodingExercise.Services
             logger = Log.ForContext<LRUCache<TKey, TValue>>();
 
             ItemEvicted += (sender, args) => { };
-            instance ??= this;
         }
 
         public static LRUCache<TKey, TValue> Instance
         {
             get
             {
-                if (instance == null)
+                lock (lazyInstance)
                 {
-                    Interlocked.CompareExchange(ref instance, new LRUCache<TKey, TValue>(ConfigurableCapacity), null);
+                    return lazyInstance.Value;
                 }
-                return instance;
             }
         }
 
@@ -52,12 +55,15 @@ namespace WizudaCodingExercise.Services
 
         public static void SetCapacity(int newCapacity)
         {
-            if (instance != null)
+            lock (lazyInstance)
             {
-                throw new InvalidOperationException("Cannot set capacity after the singleton instance has been created.");
-            }
+                if (lazyInstance.IsValueCreated)
+                {
+                    throw new InvalidOperationException("Cannot set capacity after the singleton instance has been created.");
+                }
 
-            ConfigurableCapacity = newCapacity;
+                ConfigurableCapacity = newCapacity;
+            }
         }
 
         public void AddOrUpdate(TKey key, TValue value)
@@ -69,7 +75,7 @@ namespace WizudaCodingExercise.Services
                 if (cache.TryGetValue(key, out CacheNode node))
                 {
                     node.Value = value;
-                    node.AccessTime = DateTime.Now;
+                    node.AccessTime = DateTime.UtcNow;
                     lruList.Remove(node);
                     lruList.AddLast(node);
                 }
@@ -93,7 +99,6 @@ namespace WizudaCodingExercise.Services
             }
         }
 
-
         public bool TryGetValue(TKey key, out TValue value)
         {
             lockObject.EnterReadLock();
@@ -102,7 +107,7 @@ namespace WizudaCodingExercise.Services
             {
                 if (cache.TryGetValue(key, out CacheNode node))
                 {
-                    node.AccessTime = DateTime.Now;
+                    node.AccessTime = DateTime.UtcNow;
                     lruList.Remove(node);
                     lruList.AddLast(node);
 
@@ -125,7 +130,6 @@ namespace WizudaCodingExercise.Services
                 lockObject.ExitReadLock();
             }
         }
-
 
         private void Evict()
         {
@@ -160,8 +164,8 @@ namespace WizudaCodingExercise.Services
             }
 
             handlers?.Invoke(this, new EvictionEventArgs<TKey, TValue>(key, value));
-
         }
+
 
         private class CacheNode
         {
@@ -173,7 +177,7 @@ namespace WizudaCodingExercise.Services
             {
                 Key = key;
                 Value = value;
-                AccessTime = DateTime.Now;
+                AccessTime = DateTime.UtcNow;
             }
         }
     }
