@@ -2,6 +2,7 @@
 using Serilog;
 using System.Collections.Concurrent;
 using WizudaCodingExercise.Abstraction;
+using WizudaCodingExercise.Models;
 
 namespace WizudaCodingExercise.Services
 {
@@ -164,18 +165,6 @@ namespace WizudaCodingExercise.Services
                 Key = key;
                 Value = value;
                 AccessTime = DateTime.Now;
-            }
-        }
-
-        public class EvictionEventArgs<TKey, TValue> : EventArgs
-        {
-            public TKey Key { get; }
-            public TValue Value { get; }
-
-            public EvictionEventArgs(TKey key, TValue value)
-            {
-                Key = key;
-                Value = value;
             }
         }
     }
