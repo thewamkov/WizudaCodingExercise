@@ -43,6 +43,9 @@ namespace WizudaCodingExercise.Services
             }
         }
 
+        public event EventHandler<EvictionEventArgs<TKey, TValue>> ItemEvicted;
+
+
         public static void SetCapacity(int newCapacity)
         {
             if (instance != null)
@@ -133,7 +136,7 @@ namespace WizudaCodingExercise.Services
                 cache.TryRemove(lruNode.Key, out _);
                 lruList.RemoveFirst();
 
-                logger.Information($"Evicted: {lruNode.Key}");
+                OnItemEvicted(lruNode.Key, lruNode.Value);
             }
             catch (Exception ex)
             {
@@ -143,6 +146,11 @@ namespace WizudaCodingExercise.Services
             {
                 lockObject.ExitWriteLock();
             }
+        }
+
+        protected virtual void OnItemEvicted(TKey key, TValue value)
+        {
+            ItemEvicted?.Invoke(this, new EvictionEventArgs<TKey, TValue>(key, value));
         }
 
         private class CacheNode
@@ -156,6 +164,18 @@ namespace WizudaCodingExercise.Services
                 Key = key;
                 Value = value;
                 AccessTime = DateTime.Now;
+            }
+        }
+
+        public class EvictionEventArgs<TKey, TValue> : EventArgs
+        {
+            public TKey Key { get; }
+            public TValue Value { get; }
+
+            public EvictionEventArgs(TKey key, TValue value)
+            {
+                Key = key;
+                Value = value;
             }
         }
     }
