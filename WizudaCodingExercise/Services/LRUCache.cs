@@ -1,5 +1,6 @@
 ﻿
 using Serilog;
+using System.Collections.Concurrent;
 using WizudaCodingExercise.Abstraction;
 
 namespace WizudaCodingExercise.Services
@@ -8,10 +9,10 @@ namespace WizudaCodingExercise.Services
     {
         private readonly ILogger logger;
         private readonly int capacity;
-        private readonly Dictionary<TKey, CacheNode> cache;
+        private readonly ConcurrentDictionary<TKey, CacheNode> cache;
         private readonly LinkedList<CacheNode> lruList;
 
-        private readonly object lockObject = new object();
+        private readonly ReaderWriterLockSlim lockObject = new ReaderWriterLockSlim();
 
         public LRUCache(int capacity)
         {
@@ -21,53 +22,56 @@ namespace WizudaCodingExercise.Services
             }
 
             this.capacity = capacity;
-            cache = new Dictionary<TKey, CacheNode>(capacity);
-            lruList = new LinkedList<CacheNode>();
-
-            logger = Log.ForContext<LRUCache<TKey, TValue>>();
+            this.cache = new ConcurrentDictionary<TKey, CacheNode>();
+            this.lruList = new LinkedList<CacheNode>();
+            this.logger = Log.ForContext<LRUCache<TKey, TValue>>();
         }
 
         public void AddOrUpdate(TKey key, TValue value)
         {
-            lock (lockObject)
-            {
-                try
-                {
-                    if (cache.TryGetValue(key, out CacheNode node))
-                    {
-                        // Update existing entry
-                        node.Value = value;
-                        node.AccessTime = DateTime.Now;
-                        lruList.Remove(node);
-                        lruList.AddLast(node);
-                    }
-                    else
-                    {
-                        // Add new entry
-                        if (cache.Count >= capacity)
-                            Evict();
+            lockObject.EnterWriteLock();
 
-                        CacheNode newNode = new CacheNode(key, value);
-                        cache.TryAdd(key, newNode);
-                        lruList.AddLast(newNode);
-                    }
-                }
-                catch (Exception ex)
+            try
+            {
+                if (cache.TryGetValue(key, out CacheNode node))
                 {
-                    // Log the exception using Serilog
-                    logger.Error(ex, "Error in AddOrUpdate");
+                    // Update existing entry
+                    node.Value = value;
+                    node.AccessTime = DateTime.Now;
+                    lruList.Remove(node);
+                    lruList.AddLast(node);
                 }
+                else
+                {
+                    // Add new entry
+                    if (cache.Count >= capacity)
+                        Evict();
+
+                    CacheNode newNode = new CacheNode(key, value);
+                    cache.TryAdd(key, newNode);
+                    lruList.AddLast(newNode);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the exception using Serilog
+                logger.Error(ex, "Error in AddOrUpdate");
+            }
+            finally
+            {
+                lockObject.ExitWriteLock();
             }
         }
 
 
         public bool TryGetValue(TKey key, out TValue value)
         {
-            lock (lockObject)
+            lockObject.EnterReadLock();
+
+            try
             {
                 if (cache.TryGetValue(key, out CacheNode node))
                 {
-                    // Move the accessed item to the end of the LRU list
                     node.AccessTime = DateTime.Now;
                     lruList.Remove(node);
                     lruList.AddLast(node);
@@ -79,16 +83,40 @@ namespace WizudaCodingExercise.Services
                 value = default;
                 return false;
             }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error in TryGetValue");
+
+                value = default;
+                return false;
+            }
+            finally
+            {
+                lockObject.ExitReadLock();
+            }
         }
+
 
         private void Evict()
         {
-            // Implement your eviction strategy here (LRU)
-            CacheNode lruNode = lruList.First.Value;
-            cache.Remove(lruNode.Key);
-            lruList.RemoveFirst();
+            lockObject.EnterWriteLock();
 
-            Console.WriteLine($"Evicted: {lruNode.Key}");
+            try
+            {
+                CacheNode lruNode = lruList.First.Value;
+                cache.TryRemove(lruNode.Key, out _);
+                lruList.RemoveFirst();
+
+                logger.Information($"Evicted: {lruNode.Key}");
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error in Evict");
+            }
+            finally
+            {
+                lockObject.ExitWriteLock();
+            }
         }
 
         private class CacheNode
