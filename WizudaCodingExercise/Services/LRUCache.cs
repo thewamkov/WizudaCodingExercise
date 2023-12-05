@@ -13,6 +13,7 @@ namespace WizudaCodingExercise.Abstraction
         private readonly ConcurrentDictionary<TKey, CacheNode> cache;
         private readonly LinkedList<CacheNode> lruList;
 
+        private readonly object evictionLock = new object();
         private readonly object eventLock = new object();
         private readonly ReaderWriterLockSlim lockObject = new ReaderWriterLockSlim();
         private static readonly Lazy<LRUCache<TKey, TValue>> lazyInstance;
@@ -68,8 +69,7 @@ namespace WizudaCodingExercise.Abstraction
 
         public void AddOrUpdate(TKey key, TValue value)
         {
-            lockObject.EnterWriteLock();
-
+           
             try
             {
                 if (cache.TryGetValue(key, out CacheNode node))
@@ -93,10 +93,7 @@ namespace WizudaCodingExercise.Abstraction
             {
                 logger.Error(ex, "Error in AddOrUpdate");
             }
-            finally
-            {
-                lockObject.ExitWriteLock();
-            }
+            
         }
 
         public bool TryGetValue(TKey key, out TValue value)
@@ -133,26 +130,28 @@ namespace WizudaCodingExercise.Abstraction
 
         private void Evict()
         {
-            lockObject.EnterWriteLock();
-
             try
             {
-                CacheNode lruNode = lruList.First.Value;
-                cache.TryRemove(lruNode.Key, out _);
-                lruList.RemoveFirst();
+                CacheNode lruNode;
 
-                logger.Information($"Evicted: Key = {lruNode.Key}, Value = {lruNode.Value}");
-                OnItemEvicted(lruNode.Key, lruNode.Value);
+                lock (lruList)
+                {
+                    lruNode = lruList.First.Value;
+                    lruList.RemoveFirst();
+                }
+
+                if (cache.TryRemove(lruNode.Key, out _))
+                {
+                    logger.Information($"Evicted: Key = {lruNode.Key}, Value = {lruNode.Value}");
+                    OnItemEvicted(lruNode.Key, lruNode.Value);
+                }
             }
             catch (Exception ex)
             {
                 logger.Error(ex, "Error in Evict");
             }
-            finally
-            {
-                lockObject.ExitWriteLock();
-            }
         }
+
 
         protected virtual void OnItemEvicted(TKey key, TValue value)
         {
