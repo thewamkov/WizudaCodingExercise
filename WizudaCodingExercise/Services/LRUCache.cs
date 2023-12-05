@@ -36,8 +36,6 @@ namespace WizudaCodingExercise.Abstraction
             cache = new ConcurrentDictionary<TKey, CacheNode>();
             lruList = new LinkedList<CacheNode>();
             logger = Log.ForContext<LRUCache<TKey, TValue>>();
-
-            ItemEvicted += (sender, args) => { };
         }
 
         public static LRUCache<TKey, TValue> Instance
@@ -69,15 +67,13 @@ namespace WizudaCodingExercise.Abstraction
 
         public void AddOrUpdate(TKey key, TValue value)
         {
-           
+            lockObject.EnterWriteLock();
             try
             {
                 if (cache.TryGetValue(key, out CacheNode node))
                 {
                     node.Value = value;
-                    node.AccessTime = DateTime.UtcNow;
-                    lruList.Remove(node);
-                    lruList.AddLast(node);
+                    UpdateNodeProperties(node);
                 }
                 else
                 {
@@ -93,39 +89,45 @@ namespace WizudaCodingExercise.Abstraction
             {
                 logger.Error(ex, "Error in AddOrUpdate");
             }
-            
+            finally
+            {
+                lockObject.ExitWriteLock();
+            }
         }
 
         public bool TryGetValue(TKey key, out TValue value)
         {
-            lockObject.EnterReadLock();
+            bool success = false;
+            value = default;
+
+            lockObject.EnterWriteLock();
 
             try
             {
                 if (cache.TryGetValue(key, out CacheNode node))
                 {
-                    node.AccessTime = DateTime.UtcNow;
-                    lruList.Remove(node);
-                    lruList.AddLast(node);
-
+                    UpdateNodeProperties(node);
                     value = node.Value;
-                    return true;
+                    success = true;
                 }
-
-                value = default;
-                return false;
             }
             catch (Exception ex)
             {
                 logger.Error(ex, "Error in TryGetValue");
-
-                value = default;
-                return false;
             }
             finally
             {
-                lockObject.ExitReadLock();
+                lockObject.ExitWriteLock();
             }
+
+            return success;
+        }
+
+        private void UpdateNodeProperties(CacheNode node)
+        {
+            node.AccessTime = DateTime.UtcNow;
+            lruList.Remove(node);
+            lruList.AddLast(node);
         }
 
         private void Evict()
