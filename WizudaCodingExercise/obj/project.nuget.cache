@@ -1,8 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "hjJj/3H4KKaaMjGwnQnxr+JArGrGgyGwuQZeWF7o4eZ1KoMvRL21hoFPiXNd38bEYRT5P/+DueTfPimrcNKqwg==",
+  "dgSpecHash": "/6l7j1+wnfaeKwzkX+ERI2TrwikdzX8INVbNF8cdUwkcUHZGVBlzZTiGMZ7Wo8rs3kr11uGrndflu+15ezIRDA==",
   "success": true,
   "projectFilePath": "C:\\Users\\thewa\\Desktop\\WizudaCodingExercise\\WizudaCodingExercise\\WizudaCodingExercise.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "C:\\Users\\thewa\\.nuget\\packages\\serilog\\3.1.1\\serilog.3.1.1.nupkg.sha512",
+    "C:\\Users\\thewa\\.nuget\\packages\\serilog.sinks.console\\5.0.1\\serilog.sinks.console.5.0.1.nupkg.sha512"
+  ],
   "logs": []
 }
