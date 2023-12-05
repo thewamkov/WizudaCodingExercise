@@ -1,0 +1,15 @@
+C:\Users\thewa\Desktop\WizudaCodingExercise\WizudaCodingExercise\bin\Debug\net7.0\WizudaCodingExercise.exe
+C:\Users\thewa\Desktop\WizudaCodingExercise\WizudaCodingExercise\bin\Debug\net7.0\WizudaCodingExercise.deps.json
+C:\Users\thewa\Desktop\WizudaCodingExercise\WizudaCodingExercise\bin\Debug\net7.0\WizudaCodingExercise.runtimeconfig.json
+C:\Users\thewa\Desktop\WizudaCodingExercise\WizudaCodingExercise\bin\Debug\net7.0\WizudaCodingExercise.dll
+C:\Users\thewa\Desktop\WizudaCodingExercise\WizudaCodingExercise\bin\Debug\net7.0\WizudaCodingExercise.pdb
+C:\Users\thewa\Desktop\WizudaCodingExercise\WizudaCodingExercise\obj\Debug\net7.0\WizudaCodingExercise.csproj.AssemblyReference.cache
+C:\Users\thewa\Desktop\WizudaCodingExercise\WizudaCodingExercise\obj\Debug\net7.0\WizudaCodingExercise.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\thewa\Desktop\WizudaCodingExercise\WizudaCodingExercise\obj\Debug\net7.0\WizudaCodingExercise.AssemblyInfoInputs.cache
+C:\Users\thewa\Desktop\WizudaCodingExercise\WizudaCodingExercise\obj\Debug\net7.0\WizudaCodingExercise.AssemblyInfo.cs
+C:\Users\thewa\Desktop\WizudaCodingExercise\WizudaCodingExercise\obj\Debug\net7.0\WizudaCodingExercise.csproj.CoreCompileInputs.cache
+C:\Users\thewa\Desktop\WizudaCodingExercise\WizudaCodingExercise\obj\Debug\net7.0\WizudaCodingExercise.dll
+C:\Users\thewa\Desktop\WizudaCodingExercise\WizudaCodingExercise\obj\Debug\net7.0\refint\WizudaCodingExercise.dll
+C:\Users\thewa\Desktop\WizudaCodingExercise\WizudaCodingExercise\obj\Debug\net7.0\WizudaCodingExercise.pdb
+C:\Users\thewa\Desktop\WizudaCodingExercise\WizudaCodingExercise\obj\Debug\net7.0\WizudaCodingExercise.genruntimeconfig.cache
+C:\Users\thewa\Desktop\WizudaCodingExercise\WizudaCodingExercise\obj\Debug\net7.0\ref\WizudaCodingExercise.dll
