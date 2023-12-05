@@ -1,7 +1,9 @@
 ﻿
+using WizudaCodingExercise.Abstraction;
+
 namespace WizudaCodingExercise.Services
 {
-    public class LRUCache<TKey, TValue>
+    public class LRUCache<TKey, TValue>: ILRUCache<TKey, TValue>
     {
         private readonly int capacity;
         private readonly Dictionary<TKey, CacheNode> cache;
